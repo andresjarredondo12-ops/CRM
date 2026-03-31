@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AME Legal CRM</title>
+
+<style>
+:root {
+    --primary: #1e3a8a;
+    --secondary: #3b82f6;
+    --light: #f3f4f6;
+    --dark: #1f2937;
+    --danger: #ef4444;
+}
+body {
+    font-family: Arial;
+    background: var(--light);
+    margin: 0;
+}
+.auth-wrapper {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.auth-card {
+    background:white;
+    padding:30px;
+    width:300px;
+    border-radius:8px;
+}
+.hidden {display:none;}
+button {cursor:pointer;}
+</style>
+</head>
+
+<body>
+
+<div id="auth-section" class="auth-wrapper">
+
+    <div id="login-view" class="auth-card">
+        <h2>Login</h2>
+        <input id="login-email" placeholder="email"><br><br>
+        <input id="login-password" type="password" placeholder="password"><br><br>
+        <button onclick="login()">Ingresar</button><br>
+        <span onclick="toggleView('register-view')">Registrarse</span>
+    </div>
+
+    <div id="register-view" class="auth-card hidden">
+        <h2>Registro</h2>
+        <input id="reg-email" placeholder="email"><br><br>
+        <input id="reg-password" type="password" placeholder="password"><br><br>
+        <button onclick="register()">Registrar</button><br>
+        <span onclick="toggleView('login-view')">Volver</span>
+    </div>
+
+</div>
+
+<div id="dashboard" class="hidden">
+
+    <h2>CRM</h2>
+    <p id="user-display"></p>
+    <button onclick="logout()">Salir</button>
+
+    <h3>Clientes</h3>
+
+    <input id="cli-nombre" placeholder="Nombre">
+    <input id="cli-email" placeholder="Email">
+    <input id="cli-tel" placeholder="Teléfono">
+    <button onclick="addClient()">Guardar</button>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody id="client-list"></tbody>
+    </table>
+
+</div>
+
+<script>
+
+// ===== STORAGE SEGURO =====
+function getData(key){
+    try {
+        return JSON.parse(localStorage.getItem(key)) || [];
+    } catch {
+        return [];
+    }
+}
+
+function setData(key,data){
+    localStorage.setItem(key, JSON.stringify(data));
+}
+
+if(!localStorage.getItem('users')) setData('users',[]);
+if(!localStorage.getItem('clients')) setData('clients',[]);
+
+let currentUser = localStorage.getItem('sessionUser');
+
+// ===== AUTO LOGIN =====
+window.onload = ()=>{
+    if(currentUser){
+        enterDashboard();
+    }
+}
+
+// ===== VISTAS =====
+function toggleView(id){
+    document.querySelectorAll('.auth-card').forEach(v=>v.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+}
+
+// ===== REGISTER =====
+function register(){
+    let email = document.getElementById('reg-email').value.trim();
+    let pass = document.getElementById('reg-password').value.trim();
+
+    if(!email || !pass){
+        alert("Completa todo");
+        return;
+    }
+
+    let users = getData('users');
+
+    if(users.find(u=>u.email===email)){
+        alert("Ya existe");
+        return;
+    }
+
+    users.push({email, password:pass});
+    setData('users', users);
+
+    alert("Registrado");
+    toggleView('login-view');
+}
+
+// ===== LOGIN =====
+function login(){
+    let email = document.getElementById('login-email').value.trim();
+    let pass = document.getElementById('login-password').value.trim();
+
+    let users = getData('users');
+
+    let user = users.find(u=>u.email===email && u.password===pass);
+
+    if(!user){
+        alert("Error login");
+        return;
+    }
+
+    currentUser = email;
+    localStorage.setItem('sessionUser', email);
+
+    enterDashboard();
+}
+
+// ===== DASHBOARD =====
+function enterDashboard(){
+    document.getElementById('auth-section').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('user-display').innerText = currentUser;
+
+    renderClients();
+}
+
+// ===== LOGOUT =====
+function logout(){
+    localStorage.removeItem('sessionUser');
+    location.reload();
+}
+
+// ===== CLIENTES =====
+function addClient(){
+    let nombre = document.getElementById('cli-nombre').value.trim();
+    let email = document.getElementById('cli-email').value.trim();
+    let tel = document.getElementById('cli-tel').value.trim();
+
+    if(!nombre){
+        alert("Nombre obligatorio");
+        return;
+    }
+
+    let clients = getData('clients');
+
+    clients.push({
+        id: Date.now(),
+        user: currentUser,
+        nombre,
+        email,
+        tel,
+        fecha: new Date().toLocaleDateString()
+    });
+
+    setData('clients', clients);
+
+    document.getElementById('cli-nombre').value='';
+    document.getElementById('cli-email').value='';
+    document.getElementById('cli-tel').value='';
+
+    renderClients();
+}
+
+// ===== RENDER =====
+function renderClients(){
+    let clients = getData('clients').filter(c=>c.user===currentUser);
+
+    let tbody = document.getElementById('client-list');
+    tbody.innerHTML='';
+
+    clients.forEach(c=>{
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${c.nombre}</td>
+            <td>${c.email || '-'}</td>
+            <td>${c.tel || '-'}</td>
+            <td>${c.fecha}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+</script>
+
+</body>
+</html>
