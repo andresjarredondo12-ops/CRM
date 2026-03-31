@@ -29,9 +29,31 @@ body {
     padding:30px;
     width:300px;
     border-radius:8px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 .hidden {display:none;}
-button {cursor:pointer;}
+button {
+    cursor:pointer;
+    background:var(--secondary);
+    color:white;
+    border:none;
+    padding:10px;
+    width:100%;
+}
+input {
+    width:100%;
+    padding:8px;
+}
+span {
+    color:var(--secondary);
+    cursor:pointer;
+    font-size:14px;
+}
+table {
+    background:white;
+    margin-top:15px;
+    width:100%;
+}
 </style>
 </head>
 
@@ -43,7 +65,7 @@ button {cursor:pointer;}
         <h2>Login</h2>
         <input id="login-email" placeholder="email"><br><br>
         <input id="login-password" type="password" placeholder="password"><br><br>
-        <button onclick="login()">Ingresar</button><br>
+        <button onclick="login()">Ingresar</button><br><br>
         <span onclick="toggleView('register-view')">Registrarse</span>
     </div>
 
@@ -51,7 +73,7 @@ button {cursor:pointer;}
         <h2>Registro</h2>
         <input id="reg-email" placeholder="email"><br><br>
         <input id="reg-password" type="password" placeholder="password"><br><br>
-        <button onclick="register()">Registrar</button><br>
+        <button onclick="register()">Registrar</button><br><br>
         <span onclick="toggleView('login-view')">Volver</span>
     </div>
 
@@ -99,8 +121,13 @@ function setData(key,data){
     localStorage.setItem(key, JSON.stringify(data));
 }
 
-if(!localStorage.getItem('users')) setData('users',[]);
-if(!localStorage.getItem('clients')) setData('clients',[]);
+// FIX CRÍTICO
+if(!localStorage.getItem('users') || localStorage.getItem('users') === "undefined"){
+    setData('users', []);
+}
+if(!localStorage.getItem('clients') || localStorage.getItem('clients') === "undefined"){
+    setData('clients', []);
+}
 
 let currentUser = localStorage.getItem('sessionUser');
 
@@ -123,22 +150,30 @@ function register(){
     let pass = document.getElementById('reg-password').value.trim();
 
     if(!email || !pass){
-        alert("Completa todo");
+        alert("Completa todos los campos");
         return;
     }
 
     let users = getData('users');
 
-    if(users.find(u=>u.email===email)){
-        alert("Ya existe");
+    console.log("Usuarios actuales:", users);
+
+    if(users.some(u => u.email === email)){
+        alert("El usuario ya existe");
         return;
     }
 
-    users.push({email, password:pass});
+    users.push({ email, password: pass });
+
     setData('users', users);
 
-    alert("Registrado");
+    alert("Registro exitoso ✅");
+
+    document.getElementById('reg-email').value = '';
+    document.getElementById('reg-password').value = '';
+
     toggleView('login-view');
+    document.getElementById('login-email').value = email;
 }
 
 // ===== LOGIN =====
@@ -146,12 +181,19 @@ function login(){
     let email = document.getElementById('login-email').value.trim();
     let pass = document.getElementById('login-password').value.trim();
 
+    if(!email || !pass){
+        alert("Completa los datos");
+        return;
+    }
+
     let users = getData('users');
 
-    let user = users.find(u=>u.email===email && u.password===pass);
+    console.log("Intentando login:", email);
+
+    let user = users.find(u => u.email === email && u.password === pass);
 
     if(!user){
-        alert("Error login");
+        alert("Email o contraseña incorrectos ❌");
         return;
     }
 
@@ -165,7 +207,7 @@ function login(){
 function enterDashboard(){
     document.getElementById('auth-section').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
-    document.getElementById('user-display').innerText = currentUser;
+    document.getElementById('user-display').innerText = "Usuario: " + currentUser;
 
     renderClients();
 }
